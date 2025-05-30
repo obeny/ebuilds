@@ -1,0 +1,12 @@
+/var/log/mssql/*log {
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+	if test -d /run/systemd/system ; then
+		systemctl reload mssql-server.service > /dev/null 2>&1 || true
+	else
+		/etc/init.d/mssql-server restart > /dev/null 2>&1 || true
+	fi
+    endscript
+}

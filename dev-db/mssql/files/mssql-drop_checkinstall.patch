@@ -1,0 +1,77 @@
+--- a/opt/mssql/lib/mssql-conf/checkinstall.sh
++++ b/opt/mssql/lib/mssql-conf/checkinstall.sh
+@@ -1,71 +1,5 @@
+-#!/bin/bash -e
++#!/bin/bash
+ # Checks Install of Sql Server and creates the proper directories, users and permissions
+ 
+-reset_perms=0
+-mssql_dir=/var/opt/mssql
+-
+-# If not running as root, verify but don't try to fix everything.
+-#
+-if (( $EUID != 0 )); then
+-    if ! getent group mssql >/dev/null; then
+-        echo "mssql group does not exist and cannot create as non-root"
+-        exit 1
+-    fi
+-
+-    if ! getent passwd mssql >/dev/null; then
+-        echo "mssql user does not exist and cannot create as non-root"
+-        exit 1
+-    fi
+-
+-    if [ ! -d $mssql_dir ]; then
+-        echo "cannot create $mssql_dir directory as non-root"
+-        exit 1
+-    fi
+-
+-    if [ ! -w $mssql_dir ]; then
+-        echo "user does not have write permission for $mssql_dir directory"
+-        exit 1
+-    fi
+-else
+-    if ! getent group mssql >/dev/null; then
+-        groupadd -r mssql
+-        reset_perms=1
+-    fi
+-
+-    if ! getent passwd mssql >/dev/null; then
+-        mkdir -p /var/opt/mssql
+-        useradd -M -r -s /bin/bash -d /var/opt/mssql -g mssql mssql
+-        reset_perms=1
+-    else
+-        usermod -g mssql mssql
+-    fi
+-fi
+-
+-# Creating the rest of the directories should work as expected
+-# since the mssql directory already exists and should be owned
+-# by the mssql user whether doing normal setup or a non-root
+-# container.
+-#
+-
+-if [ ! -d /var/opt/mssql/.system ]; then
+-    mkdir -p /var/opt/mssql/.system
+-    reset_perms=1
+-fi
+-
+-if [ ! -d /var/opt/mssql/data ]; then
+-    mkdir -p /var/opt/mssql/data
+-    reset_perms=1
+-fi
+-
+-if [ ! -d /var/opt/mssql/log ]; then
+-   mkdir -p /var/opt/mssql/log
+-   reset_perms=1
+-fi
+-
+-if [ $reset_perms -eq 1 ]; then
+-    # If user is root or the mssql user, the following
+-    # should work.
+-    #
+-    chown -R mssql:mssql /var/opt/mssql
+-    chmod 770 /var/opt/mssql
+-fi
++# DO NOTHING AS CONFIGURATION IS DONE VIA EBUILD
++exit 0

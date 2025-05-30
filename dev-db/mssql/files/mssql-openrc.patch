@@ -1,0 +1,32 @@
+--- a/opt/mssql/lib/mssql-conf/mssqlconfhelper.py
++++ b/opt/mssql/lib/mssql-conf/mssqlconfhelper.py
+@@ -1120,18 +1120,11 @@
+ 
+     # Start the SQL Server service
+     #
+-    ret = subprocess.call(["systemctl", "start", "mssql-server"])
++    ret = subprocess.call(["/etc/init.d/mssql-server", "start"])
+     if (ret != 0):
+         print(_("Attempting to start the Microsoft SQL Server service failed."))
+         exit(ret)
+ 
+-    # Enable SQL Server to run at startup
+-    #
+-    ret = subprocess.call(["systemctl", "enable", "mssql-server"])
+-    if (ret != 0):
+-        print(_("Attempting to enable the Microsoft SQL Server to start at boot failed."))
+-        exit(ret)
+-
+     print(_("Setup has completed successfully. SQL Server is now starting."))
+ 
+     return None
+--- a/opt/mssql/lib/mssql-conf/checkrunninginstance.sh
++++ b/opt/mssql/lib/mssql-conf/checkrunninginstance.sh
+@@ -1,4 +1,4 @@
+ #!/bin/bash
+ # Checks if an instance of SQL Server is running
+-systemctl status mssql-server > /dev/null 2>&1
+-exit $?
+\ No newline at end of file
++/etc/init.d/mssql-server status 2>&1 | grep -q "started"
++exit $?
