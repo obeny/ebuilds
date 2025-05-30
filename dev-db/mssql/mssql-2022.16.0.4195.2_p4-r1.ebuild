@@ -2,19 +2,25 @@
 # https://packages.microsoft.com/ubuntu/22.04/mssql-server-2022
 
 EAPI=8
-inherit unpacker
+inherit unpacker systemd
 
 PLEVEL="${PV##*_p}"
 MY_PV="${PV/_p*}"
 MY_PV=$(ver_cut 2-5)
 
+#USE="-* minimal sasl ssl" emerge -1 openldap:0/2.5 --buildpkgonly
+OPENLDAP_COMPAT_VER="2.5.19-1"
+
 DESCRIPTION="Microsoft SQL RDBMS"
 HOMEPAGE="https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-setup"
-SRC_URI="https://packages.microsoft.com/ubuntu/22.04/mssql-server-2022/pool/main/m/mssql-server/mssql-server_${MY_PV}-${PLEVEL}_amd64.deb"
+SRC_URI="
+    https://packages.microsoft.com/ubuntu/22.04/mssql-server-2022/pool/main/m/mssql-server/mssql-server_${MY_PV}-${PLEVEL}_amd64.deb
+    http://obeny.obeny.net/gentoo_distfiles/openldap-${OPENLDAP_COMPAT_VER}.gpkg.tar
+"
 S="${WORKDIR}"
 
 LICENSE="MSSQL"
-SLOT="0"
+SLOT="0/2022"
 
 KEYWORDS="~amd64"
 IUSE="logrotate systemd"
@@ -28,9 +34,10 @@ DEPEND="
 	app-crypt/mit-krb5
 	sys-auth/sssd
 
-	net-nds/openldap:0/2.5
-
-	systemd? ( sys-apps/systemd )
+	systemd? (
+		sys-apps/systemd
+		sys-process/audit
+	)
 "
 RDEPEND="
 	acct-user/mssql
@@ -52,7 +59,8 @@ src_prepare() {
 	fi
 
 	# override default log directory
-	sed -i -e 's%/var/opt/mssql/log%/var/log/mssql%' opt/mssql/lib/mssql-conf/mssqlconfhelper.py || die "Sed failed!"
+	sed -i -e 's%/var/opt/mssql/log%/var/log/mssql%' opt/mssql/lib/mssql-conf/mssqlconfhelper.py || die "log location update failed!"
+	sed -i -e 's%TimeoutSec=30min%Timeoutsec=120%' lib/systemd/system/mssql-server.service || die "SystemD 'TimeoutSec' update failed!"
 }
 
 src_install() {
@@ -61,6 +69,11 @@ src_install() {
 	doins -r "${S}"/opt/mssql/bin
 	chmod 0755 "${D}"/opt/mssql/bin/*
 
+	# Add legacy openldap libraries
+	insinto /opt/mssql/lib
+	doins -r "${S}"/openldap-"${OPENLDAP_COMPAT_VER}"/image/usr/lib64/lib*.so.*
+
+	# Install files
 	insinto /opt/mssql/lib
 	doins -r "${S}"/opt/mssql/lib/{*.sfp,*.so*}
 	doins -r "${S}"/opt/mssql/lib/loc
@@ -79,6 +92,9 @@ src_install() {
 
 	if use !systemd; then
 		newinitd "${FILESDIR}"/mssql.initd mssql-server
+	else
+		systemd_newunit "${S}"/lib/systemd/system/mssql-server.service mssql-server.service
+
 	fi
 
 	# Install config
